@@ -7,21 +7,52 @@ import {
 } from "@/lib/news";
 import Link from "next/link";
 
-export default function ArchiveYearPage({ params }) {
-  const filter = params.filter;
-  const selectedYear = filter?.[0];
-  const selectedMonth = filter?.[1];
-
-  let news;
+function NewsFilter({year, month}) {
   let links = getAvailableNewsYears();
 
-  if (selectedYear) {
-    if (selectedMonth) {
-      news = getNewsForYearAndMonth(selectedYear, selectedMonth);
+  if (
+    (year && !getAvailableNewsYears(year).includes(+year)) ||
+    (month && !getAvailableNewsMonths(year, month).includes(+month))
+  ) {
+    throw new Error("Invalid filter.");
+  }
+
+  if (year) {
+    if (month) {
       links = [];
     } else {
-      news = getNewsForYear(selectedYear);
-      links = getAvailableNewsMonths(selectedYear);
+      links = getAvailableNewsMonths(year);
+    }
+  }
+
+  return (
+    <header id="archive-header">
+      <nav>
+        <ul>
+          {links.map((link) => {
+            const href = year
+              ? `/archive/${year}/${link}`
+              : `/archive/${link}`;
+            return (
+              <li key={link}>
+                <Link href={href}>{link}</Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </header>
+  );
+}
+
+function FilteredNews({year, month}) {
+  let news;
+
+  if (year) {
+    if (month) {
+      news = getNewsForYearAndMonth(year, month);
+    } else {
+      news = getNewsForYear(year);
     }
   }
 
@@ -29,30 +60,18 @@ export default function ArchiveYearPage({ params }) {
 
   if (news) newsContent = <NewsList news={news} />;
 
-  if (selectedYear && !getAvailableNewsYears(selectedYear).includes(+selectedYear) ||
-    selectedMonth && !getAvailableNewsMonths(selectedYear, selectedMonth).includes(+selectedMonth)) {
-      throw new Error("Invalid filter.")
-    }
+  return newsContent;
+}
+
+export default function ArchiveYearPage({ params }) {
+  const filter = params.filter;
+  const selectedYear = filter?.[0];
+  const selectedMonth = filter?.[1];
 
   return (
     <>
-      <header id="archive-header">
-        <nav>
-          <ul>
-            {links.map((link) => {
-              const href = selectedYear
-                ? `/archive/${selectedYear}/${link}`
-                : `/archive/${link}`;
-              return (
-                <li key={link}>
-                  <Link href={href}>{link}</Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      </header>
-      {newsContent}
+      <NewsFilter year={selectedYear} month={selectedMonth} />
+      <FilteredNews year={selectedYear} month={selectedMonth} />
     </>
   );
 }
